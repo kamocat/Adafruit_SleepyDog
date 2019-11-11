@@ -2,6 +2,8 @@
 
 Arduino library to use the watchdog timer for system reset and low power sleep.
 
+NOTE: This library has been modified to use the watchdog for debugging, rather than sleeping.
+
 Currently supports the following hardware:
 
 *  Arduino Uno or other ATmega328P-based boards.

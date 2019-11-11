@@ -39,10 +39,17 @@ public:
     // returned.
     int sleep(int maxPeriodMS = 0);
 
+    // A debugging function, for finding where the code is halting.
+    void warn( const String &msg, int timeout );
+
 private:
     void _initialize_wdt();
 
     bool _initialized;
+
 };
 
+// I wish I had a better way of declaring this.
+// I need to read it in interrupt context, where no parameters are passed in.
+static String watchdog_warn_msg;
 #endif

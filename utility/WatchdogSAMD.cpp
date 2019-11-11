@@ -12,8 +12,8 @@ int WatchdogSAMD::enable(int maxPeriodMS, bool isForSleep) {
     // Enable the watchdog with a period up to the specified max period in
     // milliseconds.
 
-    // Review the watchdog section from the SAMD21 datasheet section 17:
-    // http://www.atmel.com/images/atmel-42181-sam-d21_datasheet.pdf
+    // Review the watchdog section from the SAMD21 datasheet section 18:
+    // http://ww1.microchip.com/downloads/en/DeviceDoc/SAMD21-Family-DataSheet-DS40001882D.pdf
 
     int     cycles;
     uint8_t bits;
@@ -38,40 +38,13 @@ int WatchdogSAMD::enable(int maxPeriodMS, bool isForSleep) {
         bits   = 0xB;
     } else {
         cycles = (maxPeriodMS * 1024L + 500) / 1000; // ms -> WDT cycles
-        if(cycles >= 8192) {
-            cycles = 8192;
-            bits   = 0xA;
-        } else if(cycles >= 4096) {
-            cycles = 4096;
-            bits   = 0x9;
-        } else if(cycles >= 2048) {
-            cycles = 2048;
-            bits   = 0x8;
-        } else if(cycles >= 1024) {
-            cycles = 1024;
-            bits   = 0x7;
-        } else if(cycles >= 512) {
-            cycles = 512;
-            bits   = 0x6;
-        } else if(cycles >= 256) {
-            cycles = 256;
-            bits   = 0x5;
-        } else if(cycles >= 128) {
-            cycles = 128;
-            bits   = 0x4;
-        } else if(cycles >= 64) {
-            cycles = 64;
-            bits   = 0x3;
-        } else if(cycles >= 32) {
-            cycles = 32;
-            bits   = 0x2;
-        } else if(cycles >= 16) {
-            cycles = 16;
-            bits   = 0x1;
-        } else {
-            cycles = 8;
-            bits   = 0x0;
+        cycles = cycles >> 2;   // min cycles is 8
+        bits = 0;
+        // Cycle choices are in powers of 2
+        while( cycles = cycles>>1){
+            ++bits;
         }
+        cycles = 8<<bits;
     }
 
     // Watchdog timer on SAMD is a slightly different animal than on AVR.
@@ -177,6 +150,7 @@ void WDT_Handler(void) {
     while(WDT->STATUS.bit.SYNCBUSY); // Sync CTRL write
 #endif
     WDT->INTFLAG.bit.EW  = 1;        // Clear interrupt flag
+    Serial.println(watchdog_warn_msg);        // Print the debug message
 }
 
 int WatchdogSAMD::sleep(int maxPeriodMS) {
@@ -208,6 +182,11 @@ int WatchdogSAMD::sleep(int maxPeriodMS) {
     // (assuming we can pin down which interrupt caused the wake).
 
     return actualPeriodMS;
+}
+
+void WatchdogSAMD::warn( const String &msg, int timeout ){
+    watchdog_warn_msg = msg;
+    enable(timeout, true); // true = use interrupt, not reset
 }
 
 void WatchdogSAMD::_initialize_wdt() {
